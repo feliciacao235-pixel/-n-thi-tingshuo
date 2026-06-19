@@ -170,13 +170,28 @@ function loadQuestion() {
     
     if (current.type === 'idiom') {
         loadIdiomQuestion(current);
-    } else if (current.type === 'structure') {
-        loadStructureQuestion(current);
+    } else if (current.type === 'grammar') {
+        loadGrammarQuestion(current);
     }
 }
 
 function loadIdiomQuestion(question) {
     document.getElementById('questionType').textContent = '📚 Chọn thành ngữ phù hợp';
+    document.getElementById('questionContent').innerHTML = question.question;
+    
+    let optionsHTML = '';
+    question.options.forEach((option, index) => {
+        optionsHTML += `
+            <button class="option-btn" onclick="selectOption(${index})">
+                ${String.fromCharCode(65 + index)}. ${option}
+            </button>
+        `;
+    });
+    document.getElementById('questionOptions').innerHTML = optionsHTML;
+}
+
+function loadGrammarQuestion(question) {
+    document.getElementById('questionType').textContent = `✍️ ${question.structure}`;
     document.getElementById('questionContent').innerHTML = question.question;
     
     let optionsHTML = '';
@@ -204,6 +219,24 @@ function loadStructureQuestion(question) {
     document.getElementById('questionContent').innerHTML = content + 
         `<div class="hint" style="margin-top: 15px; color: #666; font-size: 0.9em;">💡 ${question.hints}</div>`;
     document.getElementById('questionOptions').innerHTML = '';
+}
+
+function loadDialogueQuestion(question) {
+    document.getElementById('questionType').textContent = `💬 ${question.structure}`;
+    
+    document.getElementById('questionContent').innerHTML = question.question;
+    document.getElementById('questionOptions').innerHTML = `
+        <textarea id="dialogueAnswer" class="dialogue-textarea" 
+            placeholder="Nhập câu trả lời của bạn..." 
+            oninput="checkDialogueFilled()"></textarea>
+        <div class="hint" style="margin-top: 15px; color: #666; font-size: 0.9em;">💡 ${question.hints}</div>
+    `;
+}
+
+function checkDialogueFilled() {
+    const textarea = document.getElementById('dialogueAnswer');
+    const hasContent = textarea && textarea.value.trim().length > 0;
+    document.getElementById('checkBtn').disabled = !hasContent;
 }
 
 function selectOption(index) {
@@ -240,13 +273,20 @@ function checkAnswer() {
     const current = exercises[currentState.currentIndex];
     const feedback = document.getElementById('feedback');
     
-    let isCorrect = false;
+    const selected = currentState.selectedOption;
+    const correct = current.correct;
+    const isCorrect = selected === correct;
     
-    if (current.type === 'idiom') {
-        isCorrect = checkIdiomAnswer(current);
-    } else if (current.type === 'structure') {
-        isCorrect = checkStructureAnswer(current);
-    }
+    // Highlight correct and incorrect
+    const buttons = document.querySelectorAll('.option-btn');
+    buttons.forEach((btn, index) => {
+        btn.disabled = true;
+        if (index === correct) {
+            btn.classList.add('correct');
+        } else if (index === selected && index !== correct) {
+            btn.classList.add('incorrect');
+        }
+    });
     
     // Update score
     if (isCorrect) {
@@ -255,11 +295,7 @@ function checkAnswer() {
         feedback.innerHTML = `<h4>✓ Chính xác!</h4><p>${current.explanation || ''}</p>`;
     } else {
         feedback.className = 'feedback show incorrect';
-        let correctAnswer = '';
-        if (current.type === 'idiom') {
-            correctAnswer = current.options[current.correct];
-        }
-        feedback.innerHTML = `<h4>✗ Chưa đúng!</h4><p>${current.explanation || ''}</p>`;
+        feedback.innerHTML = `<h4>✗ Chưa đúng!</h4><p><strong>Đáp án đúng:</strong> ${current.options[correct]}</p><p>${current.explanation || ''}</p>`;
     }
     
     // Save answer
@@ -271,6 +307,41 @@ function checkAnswer() {
     
     // Save progress
     saveProgress();
+}
+
+function checkDialogueAnswer(question) {
+    const textarea = document.getElementById('dialogueAnswer');
+    if (!textarea) return false;
+    
+    const userAnswer = textarea.value.trim();
+    const correctAnswer = question.answer;
+    
+    // Disable textarea
+    textarea.disabled = true;
+    textarea.style.borderColor = '#ddd';
+    
+    // Kiểm tra nếu câu trả lời chứa các từ khóa chính
+    // Chấp nhận nếu gần đúng (flexible checking)
+    const keywords = correctAnswer.replace(/[，。、]/g, '').split(/\s+/);
+    let matchCount = 0;
+    keywords.forEach(keyword => {
+        if (userAnswer.includes(keyword)) {
+            matchCount++;
+        }
+    });
+    
+    // Nếu có ít nhất 70% từ khóa đúng thì chấp nhận
+    const isCorrect = (matchCount / keywords.length) >= 0.7;
+    
+    if (isCorrect) {
+        textarea.style.borderColor = '#4CAF50';
+        textarea.style.background = '#e8f5e9';
+    } else {
+        textarea.style.borderColor = '#f44336';
+        textarea.style.background = '#ffebee';
+    }
+    
+    return isCorrect;
 }
 
 function checkIdiomAnswer(question) {

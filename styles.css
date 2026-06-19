@@ -373,6 +373,29 @@ body {
     margin: 0 5px;
 }
 
+.dialogue-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 15px;
+    border: 2px solid #667eea;
+    border-radius: 10px;
+    font-size: 1.1em;
+    font-family: inherit;
+    resize: vertical;
+    margin-top: 15px;
+}
+
+.dialogue-textarea:focus {
+    outline: none;
+    border-color: #5568d3;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.dialogue-textarea:disabled {
+    background: #f5f5f5;
+    cursor: not-allowed;
+}
+
 .question-options {
     display: grid;
     gap: 15px;
